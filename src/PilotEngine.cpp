@@ -8,6 +8,9 @@
 #include <cstdlib>
 #include <vector>
 
+#include "Logger/Logger.h"
+#include "Util/StringUtil.h"
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const char* APPLICATION_NAME = "PilotEngine";
@@ -17,6 +20,8 @@ public:
     void run() {
         initWindow();
         initVulkan();
+        Logger::log(Logger::INFO, "Initialization successful");
+
         mainLoop();
         cleanup();
     }
@@ -74,16 +79,16 @@ private:
         }
     }
 
-    void printAvailableExtensions() {
+    static void printAvailableExtensions() {
         uint32_t extenstionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extenstionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extenstionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extenstionCount, extensions.data());
-        // TODO: add logger
-        std::cout << "available extensions:\n";
+        Logger::log(Logger::INFO, "available extensions: -------------------------------------");
         for (const auto& extension: extensions) {
-            std::cout << '\t' << extension.extensionName << '\n';
+            Logger::log(Logger::INFO, StringUtil::format( "\t%s", extension.extensionName));
         }
+        Logger::log(Logger::INFO, "-----------------------------------------------------------");
     }
 
     GLFWwindow* window;
@@ -91,7 +96,7 @@ private:
 };
 
 int main() {
-    PilotEngine app;
+    PilotEngine app = {};
 
     try {
         app.run();
