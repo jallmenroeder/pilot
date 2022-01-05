@@ -15,7 +15,7 @@ set(IMGUI_SOURCE
         ${IMGUI_DIR}/imgui_widgets.cpp)
 
 add_executable(${PROJECT_NAME}
-        src/main.cpp
+        src/PilotEngine.cpp
         ${IMGUI_SOURCE})
 
 find_package(Vulkan)
