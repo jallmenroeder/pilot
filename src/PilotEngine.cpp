@@ -13,11 +13,6 @@
 #include "Logger/Logger.h"
 #include "Util/StringUtil.h"
 
-using Logger::Level::DEBUG;
-using Logger::Level::INFO;
-using Logger::Level::WARNING;
-using Logger::Level::ERROR;
-
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const char* APPLICATION_NAME = "PilotEngine";
@@ -303,7 +298,7 @@ private:
             VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData) {
-        Logger::Level level = Logger::vulkanMessageSeverityToLogLevel(messageSeverity);
+        LogLevel level = Logger::vulkanMessageSeverityToLogLevel(messageSeverity);
         LOG(level, StringUtil::format("validation layer: %s", pCallbackData->pMessage));
         return VK_FALSE;
     }
