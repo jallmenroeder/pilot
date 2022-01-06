@@ -43,6 +43,16 @@ public:
     static Level getLogLevel() {
         return Logger::get()._getLogLevel();
     }
+
+    static Level vulkanMessageSeverityToLogLevel(VkDebugUtilsMessageSeverityFlagBitsEXT severity) {
+        switch (severity) {
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: return DEBUG;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: return INFO;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return WARNING;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: return ERROR;
+            default: return CRITICAL_ERROR;
+        }
+    }
 private:
     Logger() = default;
 
