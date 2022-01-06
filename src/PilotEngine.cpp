@@ -43,6 +43,37 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+
+    [[nodiscard]] bool isComplete() const {
+        return graphicsFamily.has_value();
+    }
+};
+
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+        if (indices.isComplete()) {
+            break;
+        }
+        i++;
+    }
+
+    return indices;
+}
+
 class PilotEngine {
 public:
     void run() {
@@ -176,7 +207,8 @@ private:
         score += deviceProperties.limits.maxImageDimension2D;
 
         // Necessary features
-        if (!deviceFeatures.geometryShader) {
+        QueueFamilyIndices indices = findQueueFamilies(device);
+        if (!deviceFeatures.geometryShader || !indices.isComplete()) {
             return 0;
         }
 
@@ -251,10 +283,10 @@ private:
         return VK_FALSE;
     }
 
-    GLFWwindow* window;
-    VkInstance instance;
+    GLFWwindow* window = nullptr;
+    VkInstance instance = VK_NULL_HANDLE;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT debugMessenger;
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 };
 
 int main() {
