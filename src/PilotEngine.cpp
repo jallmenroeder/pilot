@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <map>
 
 #include "Logger/Logger.h"
 #include "Util/StringUtil.h"
@@ -57,6 +58,7 @@ private:
     void initVulkan() {
         createInstance();
         setupDebugMessenger();
+        pickPhysicalDevice();
     }
 
     void mainLoop() {
@@ -132,6 +134,55 @@ private:
         }
     }
 
+    void pickPhysicalDevice() {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        if (deviceCount == 0) {
+            std::string_view message = "failed to find GPUs with Vulkan support!";
+            Logger::log(Logger::ERROR, message);
+            throw std::runtime_error(message.data());
+        }
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        std::multimap<int, VkPhysicalDevice> candidates;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        for (const auto& device : devices) {
+            int score = rateDeviceSuitability(device);
+            candidates.insert(std::make_pair(score, device));
+        }
+
+        if (candidates.rbegin()->first > 0) {
+            physicalDevice = candidates.rbegin()->second;
+        } else {
+            std::string_view message = "failed to find a suitable GPU!";
+            Logger::log(Logger::ERROR, message);
+            throw std::runtime_error(message.data());
+        }
+    }
+
+    static int rateDeviceSuitability(VkPhysicalDevice device) {
+        VkPhysicalDeviceProperties deviceProperties;
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        int score = 0;
+
+        // Discrete GPUs have a significant performance advantage
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            score += 1000;
+        }
+
+        // Maximum possible size of textures affects graphics quality
+        score += deviceProperties.limits.maxImageDimension2D;
+
+        // Necessary features
+        if (!deviceFeatures.geometryShader) {
+            return 0;
+        }
+
+        return score;
+    }
+
     static void printAvailableInstanceExtensions() {
         uint32_t extenstionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extenstionCount, nullptr);
@@ -202,6 +253,7 @@ private:
 
     GLFWwindow* window;
     VkInstance instance;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger;
 };
 
