@@ -10,7 +10,6 @@ public:
         INFO,
         WARNING,
         ERROR,
-        CRITICAL_ERROR
     };
 
     static Logger& get() {
@@ -50,7 +49,7 @@ public:
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: return INFO;
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return WARNING;
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: return ERROR;
-            default: return CRITICAL_ERROR;
+            default: return ERROR;
         }
     }
 private:
@@ -62,7 +61,6 @@ private:
             case INFO: return "INFO";
             case WARNING: return "WARNING";
             case ERROR: return "ERROR";
-            case CRITICAL_ERROR: return "CRITICAL_ERROR";
             default: return "YOU FORGOT TO ADD THE NEW LOG LEVEL TO THE TO_STRING METHOD, SILLY";
         }
     }
