@@ -31,10 +31,6 @@ public:
         }
     }
 
-    static void log(Level severity, std::string_view message) {
-        Logger::get()._log(severity, message);
-    }
-
     static void setLogLevel(Level level) {
         Logger::get()._setLogLevel(level);
     }
@@ -67,3 +63,7 @@ private:
 
     Level logLevel = DEBUG;
 };
+
+void LOG(Logger::Level severity, std::string_view message) {
+    Logger::get()._log(severity, message);
+}

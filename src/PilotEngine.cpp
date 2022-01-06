@@ -13,6 +13,11 @@
 #include "Logger/Logger.h"
 #include "Util/StringUtil.h"
 
+using Logger::Level::DEBUG;
+using Logger::Level::INFO;
+using Logger::Level::WARNING;
+using Logger::Level::ERROR;
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const char* APPLICATION_NAME = "PilotEngine";
@@ -79,7 +84,7 @@ public:
     void run() {
         initWindow();
         initVulkan();
-        Logger::log(Logger::INFO, "Initialization successful");
+        LOG(INFO, "Initialization successful");
 
         mainLoop();
         cleanup();
@@ -169,7 +174,7 @@ private:
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         if (deviceCount == 0) {
             std::string_view message = "failed to find GPUs with Vulkan support!";
-            Logger::log(Logger::ERROR, message);
+            LOG(ERROR, message);
             throw std::runtime_error(message.data());
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -184,7 +189,7 @@ private:
             physicalDevice = candidates.rbegin()->second;
         } else {
             std::string_view message = "failed to find a suitable GPU!";
-            Logger::log(Logger::ERROR, message);
+            LOG(ERROR, message);
             throw std::runtime_error(message.data());
         }
     }
@@ -215,7 +220,7 @@ private:
 
         if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
             std::string_view message = "failed to create logical device!";
-            Logger::log(Logger::ERROR, message);
+            LOG(ERROR, message);
             throw std::runtime_error(message.data());
         }
 
@@ -299,7 +304,7 @@ private:
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData) {
         Logger::Level level = Logger::vulkanMessageSeverityToLogLevel(messageSeverity);
-        Logger::log(level, StringUtil::format("validation layer: %s", pCallbackData->pMessage));
+        LOG(level, StringUtil::format("validation layer: %s", pCallbackData->pMessage));
         return VK_FALSE;
     }
 
