@@ -126,8 +126,6 @@ private:
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-        printAvailableInstanceExtensions();
-
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
@@ -213,18 +211,6 @@ private:
         }
 
         return score;
-    }
-
-    static void printAvailableInstanceExtensions() {
-        uint32_t extenstionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extenstionCount, nullptr);
-        std::vector<VkExtensionProperties> extensions(extenstionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extenstionCount, extensions.data());
-        Logger::log(Logger::INFO, "available instance extensions: -------------------------------------");
-        for (const auto& extension: extensions) {
-            Logger::log(Logger::INFO, StringUtil::format( "\t%s", extension.extensionName));
-        }
-        Logger::log(Logger::INFO, "--------------------------------------------------------------------");
     }
 
     static bool checkValidationLayerSupport() {
