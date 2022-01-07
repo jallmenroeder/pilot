@@ -52,7 +52,7 @@ public:
 private:
     Logger() = default;
 
-    std::string logLevelToString(LogLevel level) {
+    static std::string logLevelToString(LogLevel level) {
         switch (level) {
             case DEBUG: return "DEBUG";
             case INFO: return "INFO";
