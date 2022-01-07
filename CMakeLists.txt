@@ -15,10 +15,11 @@ set(IMGUI_SOURCE
         ${IMGUI_DIR}/imgui_widgets.cpp)
 
 add_executable(${PROJECT_NAME}
+        ${IMGUI_SOURCE}
         src/PilotEngine.cpp
         src/Logger/Logger.h
         src/Util/StringUtil.h
-        ${IMGUI_SOURCE})
+        src/Util/FileUtil.h)
 
 find_package(Vulkan)
 if (NOT Vulkan_FOUND)
@@ -27,6 +28,9 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
+file(GLOB SPIR_V_FILES "src/Shaders/*.spv")
+file(COPY ${SPIR_V_FILES} DESTINATION "Shaders/" )
+
 add_subdirectory("external/glfw")
 find_package(glfw3 REQUIRED)
 
@@ -34,5 +38,6 @@ include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "external/glm")
 target_include_directories(${PROJECT_NAME} PUBLIC "external/tinygltf")
+target_include_directories(${PROJECT_NAME} PUBLIC "src")
 
 target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan)
