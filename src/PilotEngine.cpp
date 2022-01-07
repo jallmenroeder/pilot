@@ -121,7 +121,9 @@ private:
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
-            throw std::runtime_error("validation layers requested, but not available!");
+            std::string message = "validation layers requested, but not available!";
+            LOG(ERROR, message);
+            throw std::runtime_error(message);
         }
 
         VkInstanceCreateInfo createInfo{};
@@ -143,7 +145,9 @@ private:
         }
 
         if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create instance");
+            std::string message = "failed to create instance";
+            LOG(ERROR, message);
+            throw std::runtime_error(message);
         }
     }
 
@@ -153,13 +157,17 @@ private:
         populateDebugMessengerCreateInfo(createInfo);
 
         if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-            throw std::runtime_error("failed to set up debug messenger!");
+            std::string message = "failed to set up debug messenger!";
+            LOG(ERROR, message);
+            throw std::runtime_error(message);
         }
     }
 
     void createSurface() {
         if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
+            std::string message = "failed to create window surface!";
+            LOG(ERROR, message);
+            throw std::runtime_error(message);
         }
     }
 
@@ -167,9 +175,9 @@ private:
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
         if (deviceCount == 0) {
-            std::string_view message = "failed to find GPUs with Vulkan support!";
+            std::string message = "failed to find GPUs with Vulkan support!";
             LOG(ERROR, message);
-            throw std::runtime_error(message.data());
+            throw std::runtime_error(message);
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
         std::multimap<int, VkPhysicalDevice> candidates;
@@ -182,9 +190,9 @@ private:
         if (candidates.rbegin()->first > 0) {
             m_physicalDevice = candidates.rbegin()->second;
         } else {
-            std::string_view message = "failed to find a suitable GPU!";
+            std::string message = "failed to find a suitable GPU!";
             LOG(ERROR, message);
-            throw std::runtime_error(message.data());
+            throw std::runtime_error(message);
         }
     }
 
@@ -221,9 +229,9 @@ private:
         }
 
         if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
-            std::string_view message = "failed to create logical device!";
+            std::string message = "failed to create logical device!";
             LOG(ERROR, message);
-            throw std::runtime_error(message.data());
+            throw std::runtime_error(message);
         }
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
@@ -272,7 +280,9 @@ private:
         createInfo.oldSwapchain = VK_NULL_HANDLE;
 
         if (vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create swap chain!");
+            std::string message = "failed to create swap chain!";
+            LOG(ERROR, message);
+            throw std::runtime_error(message);
         }
 
         vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
