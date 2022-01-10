@@ -77,6 +77,8 @@ public:
         cleanup();
     }
 
+    bool m_framebufferResized = false;
+
 private:
     void initVulkan() {
         createInstance();
@@ -103,28 +105,24 @@ private:
     }
 
     void cleanup() {
+        cleanupSwapchain();
+
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
         }
+
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
-        for (auto framebuffer : m_swapChainFramebuffers) {
-            vkDestroyFramebuffer(m_device, framebuffer, nullptr);
-        }
-        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-        for (auto imageView : m_swapChainImageViews) {
-            vkDestroyImageView(m_device, imageView, nullptr);
-        }
-        vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+
         vkDestroyDevice(m_device, nullptr);
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
+
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
+
         glfwDestroyWindow(m_window);
         glfwTerminate();
     }
@@ -133,7 +131,15 @@ private:
         vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
+            m_framebufferResized = false;
+            recreateSwapchain();
+        } else if (result != VK_SUCCESS) {
+            THROW_LOGGED_ERROR("failed to acquire swap chain image!")
+        }
+
 
         // Check if a previous frame is using this image (i.e. there is its fence to wait on)
         if (m_imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
@@ -174,18 +180,71 @@ private:
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr; // Optional
 
-        vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            recreateSwapchain();
+        } else if (result != VK_SUCCESS) {
+            THROW_LOGGED_ERROR("failed to present swap chain image!")
+        }
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
+    void cleanupSwapchain() {
+        for (auto& m_swapChainFramebuffer : m_swapChainFramebuffers) {
+            vkDestroyFramebuffer(m_device, m_swapChainFramebuffer, nullptr);
+        }
+
+        vkFreeCommandBuffers(m_device, m_commandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
+
+        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
+        for (auto& m_swapChainImageView : m_swapChainImageViews) {
+            vkDestroyImageView(m_device, m_swapChainImageView, nullptr);
+        }
+
+        vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+    }
+
+    void recreateSwapchain() {
+        int width = 0, height = 0;
+        glfwGetFramebufferSize(m_window, &width, &height);
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(m_window, &width, &height);
+            glfwWaitEvents();
+        }
+
+        vkDeviceWaitIdle(m_device);
+
+        cleanupSwapchain();
+
+        createSwapchain();
+        createImageViews();
+        createRenderPass();
+        createGraphicsPipeline();
+        createFrameBuffers();
+        createCommandBuffers();
+
+        vkDeviceWaitIdle(m_device);
     }
 
     void initWindow() {
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         m_window = glfwCreateWindow(WIDTH, HEIGHT, APPLICATION_NAME, nullptr, nullptr);
+        glfwSetWindowUserPointer(m_window, this);
+        glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
+    }
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+        auto app = reinterpret_cast<PilotEngine*>(glfwGetWindowUserPointer(window));
+        app->m_framebufferResized = true;
     }
 
     void createInstance() {
