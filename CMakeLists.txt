@@ -17,6 +17,7 @@ set(IMGUI_SOURCE
 add_executable(${PROJECT_NAME}
         ${IMGUI_SOURCE}
         src/PilotEngine.cpp
+        src/Common.h
         src/Logger/Logger.h
         src/Util/StringUtil.h
         src/Util/FileUtil.h)

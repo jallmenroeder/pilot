@@ -12,7 +12,7 @@
 #include <set>
 #include <optional>
 
-#include "Logger/Logger.h"
+#include "Common.h"
 #include "Util/StringUtil.h"
 #include "Util/FileUtil.h"
 
@@ -139,9 +139,7 @@ private:
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
-            std::string message = "validation layers requested, but not available!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("validation layers requested, but not available!")
         }
 
         VkInstanceCreateInfo createInfo{};
@@ -163,9 +161,7 @@ private:
         }
 
         if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            std::string message = "failed to create instance";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create instance")
         }
     }
 
@@ -175,17 +171,13 @@ private:
         populateDebugMessengerCreateInfo(createInfo);
 
         if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-            std::string message = "failed to set up debug messenger!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to set up debug messenger!")
         }
     }
 
     void createSurface() {
         if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
-            std::string message = "failed to create window surface!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create window surface!")
         }
     }
 
@@ -193,9 +185,7 @@ private:
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
         if (deviceCount == 0) {
-            std::string message = "failed to find GPUs with Vulkan support!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to find GPUs with Vulkan support!")
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
         std::multimap<int, VkPhysicalDevice> candidates;
@@ -208,9 +198,7 @@ private:
         if (candidates.rbegin()->first > 0) {
             m_physicalDevice = candidates.rbegin()->second;
         } else {
-            std::string message = "failed to find a suitable GPU!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to find a suitable GPU!")
         }
     }
 
@@ -247,9 +235,7 @@ private:
         }
 
         if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
-            std::string message = "failed to create logical device!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create logical device!")
         }
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
@@ -298,9 +284,7 @@ private:
         createInfo.oldSwapchain = VK_NULL_HANDLE;
 
         if (vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS) {
-            std::string message = "failed to create swap chain!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create swap chain!")
         }
 
         vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
@@ -330,9 +314,7 @@ private:
             createInfo.subresourceRange.layerCount = 1;
 
             if (vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]) != VK_SUCCESS) {
-                std::string message = "failed to create image views!";
-                LOG(ERROR, message);
-                throw std::runtime_error(message);
+                THROW_LOGGED_ERROR("failed to create image views!")
             }
         }
     }
@@ -365,9 +347,7 @@ private:
         renderPassInfo.pSubpasses = &subpass;
 
         if (vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
-            std::string message = "failed to create render pass!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create render pass!")
         }
     }
 
@@ -484,9 +464,7 @@ private:
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
         if (vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
-            std::string message = "failed to create pipeline layout!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create pipeline layout!")
         }
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -509,9 +487,7 @@ private:
         pipelineInfo.basePipelineIndex = -1; // Optional
 
         if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
-            std::string message = "failed to create graphics pipeline!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create graphics pipeline!")
         }
 
         vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
@@ -536,9 +512,7 @@ private:
             framebufferInfo.layers = 1;
 
             if (vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_swapChainFramebuffers[i]) != VK_SUCCESS) {
-                std::string message = "failed to create framebuffer!";
-                LOG(ERROR, message);
-                throw std::runtime_error(message);
+                THROW_LOGGED_ERROR("failed to create framebuffer!")
             }
         }
     }
@@ -552,9 +526,7 @@ private:
         poolInfo.flags = 0; // Optional
 
         if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-            std::string message = "failed to create command pool!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create command pool!")
         }
     }
 
@@ -568,9 +540,7 @@ private:
         allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
 
         if (vkAllocateCommandBuffers(m_device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-            std::string message = "failed to allocate command buffers!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to allocate command buffers!")
         }
 
         for (size_t i = 0; i < commandBuffers.size(); i++) {
@@ -580,9 +550,7 @@ private:
             beginInfo.pInheritanceInfo = nullptr; // Optional
 
             if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-                std::string message = "failed to begin recording command buffer!";
-                LOG(ERROR, message);
-                throw std::runtime_error(message);
+                THROW_LOGGED_ERROR("failed to begin recording command buffer!")
             }
 
             VkRenderPassBeginInfo renderPassInfo{};
@@ -601,9 +569,7 @@ private:
             vkCmdEndRenderPass(commandBuffers[i]);
 
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-                std::string message = "failed to record command buffer!";
-                LOG(ERROR, message);
-                throw std::runtime_error(message);
+                THROW_LOGGED_ERROR("failed to record command buffer!")
             }
         }
     }
@@ -737,9 +703,7 @@ private:
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
         VkShaderModule shaderModule;
         if (vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            std::string message = "failed to create shader module!";
-            LOG(ERROR, message);
-            throw std::runtime_error(message);
+            THROW_LOGGED_ERROR("failed to create shader module!")
         }
         return shaderModule;
     }
