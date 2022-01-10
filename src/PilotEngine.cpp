@@ -10,6 +10,7 @@
 #include <cstring>
 #include <map>
 #include <set>
+#include <optional>
 
 #include "Logger/Logger.h"
 #include "Util/StringUtil.h"
