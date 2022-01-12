@@ -133,9 +133,9 @@ private:
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-            m_framebufferResized = false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateSwapchain();
+            return;
         } else if (result != VK_SUCCESS) {
             THROW_LOGGED_ERROR("failed to acquire swap chain image!")
         }
@@ -151,16 +151,14 @@ private:
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {m_imageAvailableSemaphores[m_currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitSemaphores = &m_imageAvailableSemaphores[m_currentFrame];
         submitInfo.pWaitDstStageMask = waitStages;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_commandBuffers[imageIndex];
-        VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
+        submitInfo.pSignalSemaphores = &m_renderFinishedSemaphores[m_currentFrame];
 
         vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
@@ -172,7 +170,7 @@ private:
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
+        presentInfo.pWaitSemaphores = &m_renderFinishedSemaphores[m_currentFrame];
 
         VkSwapchainKHR swapChains[] = {m_swapChain};
         presentInfo.swapchainCount = 1;
@@ -182,7 +180,8 @@ private:
 
         result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
+            m_framebufferResized = false;
             recreateSwapchain();
         } else if (result != VK_SUCCESS) {
             THROW_LOGGED_ERROR("failed to present swap chain image!")
@@ -228,7 +227,7 @@ private:
         createFrameBuffers();
         createCommandBuffers();
 
-        vkDeviceWaitIdle(m_device);
+        m_imagesInFlight.resize(m_swapChainImages.size(), VK_NULL_HANDLE);
     }
 
     void initWindow() {
@@ -381,6 +380,7 @@ private:
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.oldSwapchain = m_swapChain;
 
         QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -719,7 +719,7 @@ private:
             if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS  ||
                 vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
-                THROW_LOGGED_ERROR("failed to create semaphores!")
+                THROW_LOGGED_ERROR("failed to create sync objects!")
             }
         }
     }
@@ -941,7 +941,7 @@ private:
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkQueue m_presentQueue = VK_NULL_HANDLE;
-    VkSwapchainKHR m_swapChain;
+    VkSwapchainKHR m_swapChain = VK_NULL_HANDLE;
     std::vector<VkImage> m_swapChainImages;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
