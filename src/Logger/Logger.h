@@ -3,6 +3,8 @@
 #include <string>
 #include <iostream>
 
+#include <vulkan/vulkan.h>
+
 enum LogLevel {
     DEBUG = 0,
     INFO,
@@ -65,6 +67,6 @@ private:
     LogLevel logLevel = DEBUG;
 };
 
-void LOG(LogLevel severity, std::string_view message) {
+inline void LOG(LogLevel severity, std::string_view message) {
     Logger::get()._log(severity, message);
 }

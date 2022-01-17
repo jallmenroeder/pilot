@@ -6,7 +6,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
-#include <vector>
 #include <cstring>
 #include <map>
 #include <set>
@@ -14,7 +13,7 @@
 
 #include "Common.h"
 #include "Util/StringUtil.h"
-#include "Util/FileUtil.h"
+#include "Shaders/Compile/ShaderCompiler.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -64,6 +63,11 @@ struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
+};
+
+struct ShaderModule {
+    std::vector<uint32_t> SPIRV;
+    VkShaderModule shaderModule;
 };
 
 class PilotEngine {
@@ -480,8 +484,8 @@ private:
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readBinaryFile("Shaders/vert.spv");
-        auto fragShaderCode = readBinaryFile("Shaders/frag.spv");
+        std::vector<uint32_t> vertShaderCode = ShaderCompiler::spirvFromGlsl("shader", VERTEX);
+        std::vector<uint32_t> fragShaderCode = ShaderCompiler::spirvFromGlsl("shader", FRAGMENT);
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -846,10 +850,10 @@ private:
         }
     }
 
-    VkShaderModule createShaderModule(const std::vector<char>& code) {
+    VkShaderModule createShaderModule(const std::vector<uint32_t>& code) {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
+        createInfo.codeSize = code.size() * 4;
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
         VkShaderModule shaderModule;
         if (vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {

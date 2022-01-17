@@ -2,17 +2,16 @@
 #pragma once
 
 #include <fstream>
-#include <vector>
+#include <sstream>
 
-#include "Logger/Logger.h"
+#include "Common.h"
 
-static std::vector<char> readBinaryFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+static std::string readFile(std::string_view path) {
+    std::ifstream file(path.data(), std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-        std::string message = "failed to open file!";
-        LOG(ERROR, message);
-        throw std::runtime_error(message);
+        std::string message = std::string("failed to open file with path \"") + path.data() + "\"";
+        THROW_LOGGED_ERROR(message)
     }
     size_t fileSize = (size_t) file.tellg();
     std::vector<char> buffer(fileSize);
@@ -21,6 +20,6 @@ static std::vector<char> readBinaryFile(const std::string& filename) {
     file.read(buffer.data(), fileSize);
     file.close();
 
-    return buffer;
+    return {buffer.begin(), buffer.end()};
 }
 

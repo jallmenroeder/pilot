@@ -3,6 +3,8 @@ project(pilot)
 
 set(CMAKE_CXX_STANDARD 20)
 
+add_definitions(-DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+
 set(IMGUI_DIR "external/imgui")
 
 set(IMGUI_SOURCE
@@ -20,7 +22,10 @@ add_executable(${PROJECT_NAME}
         src/Common.h
         src/Logger/Logger.h
         src/Util/StringUtil.h
-        src/Util/FileUtil.h)
+        src/Util/FileUtil.h
+        src/Shaders/Compile/ShaderCompiler.h
+        src/Shaders/Compile/ShaderCompiler.cpp
+        )
 
 find_package(Vulkan)
 if (NOT Vulkan_FOUND)
@@ -35,10 +40,12 @@ file(COPY ${SPIR_V_FILES} DESTINATION "Shaders/" )
 add_subdirectory("external/glfw")
 find_package(glfw3 REQUIRED)
 
+add_subdirectory("external/shaderc")
+
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "external/glm")
 target_include_directories(${PROJECT_NAME} PUBLIC "external/tinygltf")
 target_include_directories(${PROJECT_NAME} PUBLIC "src")
 
-target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan shaderc)
