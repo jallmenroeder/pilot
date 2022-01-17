@@ -6,11 +6,8 @@
 
 #include "Util/FileUtil.h"
 
-#define SHADER_SUFFIX_VERT ".vert"
-#define SHADER_SUFFIX_FRAG ".frag"
-#define SHADER_SUFFIX_COMP ".comp"
-
 #define SHADER_SRC "/shaders/in/"
+#define SHADER_CACHE "/shaders/out/"
 
 class ShaderIncluder: public shaderc::CompileOptions::IncluderInterface {
     // Handles shaderc_include_resolver_fn callbacks.
@@ -62,22 +59,28 @@ public:
     }
 };
 
-std::vector<uint32_t> ShaderCompiler::spirvFromGlsl(std::string_view path, ShaderType type, bool optimize) {
-    shaderc_shader_kind kind;
-    std::string suffix;
+std::string ShaderCompiler::getShaderSuffix(ShaderType type) {
     switch(type) {
-        case VERTEX:
-            kind = shaderc_glsl_vertex_shader;
-            suffix = SHADER_SUFFIX_VERT;
-            break;
-        case FRAGMENT:
-            kind = shaderc_glsl_fragment_shader;
-            suffix = SHADER_SUFFIX_FRAG;
-            break;
-        case COMPUTE:
-            kind = shaderc_glsl_compute_shader;
-            suffix = SHADER_SUFFIX_COMP;
+        case VERTEX: return ".vert";
+        case FRAGMENT: return ".frag";
+        case COMPUTE: return ".comp";
+        default: return ".unknown";
     }
+}
+
+static shaderc_shader_kind getShaderKind(ShaderType type) {
+    switch(type) {
+        case VERTEX: return shaderc_glsl_vertex_shader;
+        case FRAGMENT: return shaderc_glsl_fragment_shader;
+        case COMPUTE: return shaderc_glsl_compute_shader;
+        default:
+        THROW_LOGGED_ERROR("Unknown shader type, ABORTING!")
+    }
+}
+
+std::vector<uint32_t> ShaderCompiler::spirvFromGlsl(std::string_view path, ShaderType type, bool optimize) {
+    shaderc_shader_kind kind = getShaderKind(type);
+    std::string suffix = getShaderSuffix(type);
 
     // load glsl shader code
     std::string fullPath = std::string(PROJECT_SOURCE_DIR) + SHADER_SRC + path.data() + suffix;
@@ -100,4 +103,18 @@ std::vector<uint32_t> ShaderCompiler::spirvFromGlsl(std::string_view path, Shade
     }
 
     return {spirvCode.cbegin(), spirvCode.cend()};
+}
+
+std::vector<uint32_t>
+ShaderCompiler::loadCached(std::string_view name, ShaderType type, bool forceReload, bool optimize) {
+    std::string cachePath = std::string(PROJECT_SOURCE_DIR) + SHADER_CACHE + name.data() + getShaderSuffix(type) + ".spv";
+    std::vector<uint32_t> spirvCode;
+
+    if (forceReload || !fileExists(cachePath)) {
+        spirvCode = ShaderCompiler::spirvFromGlsl(name, type, optimize);
+        writeFile(cachePath, spirvCode);
+    } else {
+        spirvCode = readFileBinary(cachePath);
+    }
+    return spirvCode;
 }

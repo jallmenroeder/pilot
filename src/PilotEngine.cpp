@@ -81,8 +81,6 @@ public:
         cleanup();
     }
 
-    bool m_framebufferResized = false;
-
 private:
     void initVulkan() {
         createInstance();
@@ -103,6 +101,12 @@ private:
     void mainLoop() {
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
+
+            if (glfwGetKey(m_window, GLFW_KEY_F5) == GLFW_PRESS) {
+                m_reloadShaders = true;
+                m_swapchainOutOfDate = true;
+            }
+
             drawFrame();
         }
         vkDeviceWaitIdle(m_device);
@@ -184,8 +188,8 @@ private:
 
         result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-            m_framebufferResized = false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_swapchainOutOfDate) {
+            m_swapchainOutOfDate = false;
             recreateSwapchain();
         } else if (result != VK_SUCCESS) {
             THROW_LOGGED_ERROR("failed to present swap chain image!")
@@ -247,7 +251,7 @@ private:
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
         auto app = reinterpret_cast<PilotEngine*>(glfwGetWindowUserPointer(window));
-        app->m_framebufferResized = true;
+        app->m_swapchainOutOfDate = true;
     }
 
     void createInstance() {
@@ -484,8 +488,9 @@ private:
     }
 
     void createGraphicsPipeline() {
-        std::vector<uint32_t> vertShaderCode = ShaderCompiler::spirvFromGlsl("shader", VERTEX);
-        std::vector<uint32_t> fragShaderCode = ShaderCompiler::spirvFromGlsl("shader", FRAGMENT);
+        std::vector<uint32_t> vertShaderCode = ShaderCompiler::loadCached("shader", VERTEX, m_reloadShaders);
+        std::vector<uint32_t> fragShaderCode = ShaderCompiler::loadCached("shader", FRAGMENT, m_reloadShaders);
+        m_reloadShaders = false;
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -962,6 +967,8 @@ private:
     std::vector<VkFence> m_imagesInFlight;
     size_t m_currentFrame = 0;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
+    bool m_reloadShaders = true;
+    bool m_swapchainOutOfDate = false;
 };
 
 int main() {
