@@ -34,8 +34,7 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-file(GLOB SPIR_V_FILES "src/Shaders/*.spv")
-file(COPY ${SPIR_V_FILES} DESTINATION "Shaders/" )
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/shaders/out)
 
 add_subdirectory("external/glfw")
 find_package(glfw3 REQUIRED)
