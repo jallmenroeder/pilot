@@ -12,9 +12,8 @@ Work-in-progress. The document will be updated, once the engine supports at leas
 
 ## Build
 `git clone --recurse-submodules https://github.com/jallmenroeder/pilot.git`  
-`cd pilot/external/shaderc`  
-`./utils/git-sync-deps`  
-`cd ../../`  
+`cd pilot`  
+`./external/shaderc/utils/git-sync-deps`  
 `mkdir build`  
 `cd build`  
 `cmake ..`  
