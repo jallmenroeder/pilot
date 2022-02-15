@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/glm.hpp>
+
 #include "Logger/Logger.h"
 
 static void VK_ASSERT(bool check) {
