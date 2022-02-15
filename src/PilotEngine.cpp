@@ -57,9 +57,14 @@ struct Vertex {
 };
 
 const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+        0, 1, 2, 2, 3, 0
 };
 
 #ifdef NDEBUG
@@ -126,7 +131,8 @@ private:
         createImageViews();
         createGraphicsPipeline();
         createCommandPool();
-        createVertexBuffer();
+        createAndUploadBuffer(vertices, m_vertexBuffer, m_vertexBufferMemory, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        createAndUploadBuffer(indices, m_indexBuffer, m_indexBufferMemory, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         createCommandBuffers();
         createSyncObjects();
     }
@@ -147,6 +153,9 @@ private:
 
     void cleanup() {
         cleanupSwapchain();
+
+        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
 
         vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
         vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
@@ -625,21 +634,26 @@ private:
         VK_CHECK(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool), "failed to create command pool!")
     }
 
-    void createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    template<typename T>
+    void createAndUploadBuffer(const std::vector<T>& data, VkBuffer& dstBuffer, VkDeviceMemory& dstBufferMemory, VkBufferUsageFlagBits usage) {
+        if (data.empty()) {
+            LOG(WARNING, "cannot upload empty data");
+            return;
+        }
+        VkDeviceSize bufferSize = sizeof(data[0]) * data.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        void* data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), (size_t)bufferSize);
+        void* memoryPtr;
+        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &memoryPtr);
+        memcpy(memoryPtr, data.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, dstBuffer, dstBufferMemory);
 
-        copyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, dstBuffer, bufferSize);
         vkDestroyBuffer(m_device, stagingBuffer, nullptr);
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
@@ -716,8 +730,9 @@ private:
             VkBuffer vertexBuffers[] = {m_vertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(m_commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(m_commandBuffers[i], m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDraw(m_commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+            vkCmdDrawIndexed(m_commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
             vkCmdEndRendering(m_commandBuffers[i]);
 
@@ -1073,6 +1088,8 @@ private:
     VkCommandPool m_commandPool;
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
+    VkBuffer m_indexBuffer;
+    VkDeviceMemory m_indexBufferMemory;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
