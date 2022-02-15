@@ -143,9 +143,8 @@ private:
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateSwapchain();
             return;
-        } else if (result != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to acquire swap chain image!")
         }
+        VK_CHECK(result, "failed to acquire swap chain image!")
 
 
         // Check if a previous frame is using this image (i.e. there is its fence to wait on)
@@ -169,9 +168,7 @@ private:
 
         vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
-        if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to submit draw command buffer!")
-        }
+        VK_CHECK(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]), "failed to submit draw command buffer!")
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -190,8 +187,8 @@ private:
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_swapchainOutOfDate) {
             m_swapchainOutOfDate = false;
             recreateSwapchain();
-        } else if (result != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to present swap chain image!")
+        } else  {
+            VK_CHECK(result, "failed to present swap chain image!")
         }
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -257,7 +254,7 @@ private:
         appInfo.apiVersion = VK_API_VERSION_1_3;
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
-            THROW_LOGGED_ERROR("validation layers requested, but not available!")
+            LOGGED_EXIT("validation layers requested, but not available!")
         }
 
         VkInstanceCreateInfo createInfo{};
@@ -278,9 +275,7 @@ private:
             createInfo.pNext = nullptr;
         }
 
-        if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create instance")
-        }
+        VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_instance), "failed to create instance")
     }
 
     void setupDebugMessenger() {
@@ -288,22 +283,18 @@ private:
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to set up debug messenger!")
-        }
+        VK_CHECK(CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger), "failed to set up debug messenger!")
     }
 
     void createSurface() {
-        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create window surface!")
-        }
+        VK_CHECK(glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface), "failed to create window surface!")
     }
 
     void pickPhysicalDevice() {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
         if (deviceCount == 0) {
-            THROW_LOGGED_ERROR("failed to find GPUs with Vulkan support!")
+            LOGGED_EXIT("failed to find GPUs with Vulkan support!")
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
         std::multimap<int, VkPhysicalDevice> candidates;
@@ -316,7 +307,7 @@ private:
         if (candidates.rbegin()->first > 0) {
             m_physicalDevice = candidates.rbegin()->second;
         } else {
-            THROW_LOGGED_ERROR("failed to find a suitable GPU!")
+            LOGGED_EXIT("failed to find a suitable GPU!")
         }
     }
 
@@ -359,9 +350,7 @@ private:
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create logical device!")
-        }
+        VK_CHECK(vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device), "failed to create logical device!")
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
         vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
@@ -409,9 +398,7 @@ private:
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        if (vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create swap chain!")
-        }
+        VK_CHECK(vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain), "failed to create swap chain!")
 
         vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
         m_swapChainImages.resize(imageCount);
@@ -440,9 +427,7 @@ private:
             createInfo.subresourceRange.baseArrayLayer = 0;
             createInfo.subresourceRange.layerCount = 1;
 
-            if (vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]) != VK_SUCCESS) {
-                THROW_LOGGED_ERROR("failed to create image views!")
-            }
+            VK_CHECK(vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]), "failed to create image views!")
         }
     }
 
@@ -555,9 +540,7 @@ private:
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-        if (vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create pipeline layout!")
-        }
+        VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout), "failed to create pipeline layout!")
 
         const VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -585,9 +568,7 @@ private:
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
         pipelineInfo.basePipelineIndex = -1; // Optional
 
-        if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create graphics pipeline!")
-        }
+        VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline), "failed to create graphics pipeline!")
 
         vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
@@ -601,9 +582,7 @@ private:
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
         poolInfo.flags = 0; // Optional
 
-        if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create command pool!")
-        }
+        VK_CHECK(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool), "failed to create command pool!")
     }
 
     void createCommandBuffers() {
@@ -615,9 +594,7 @@ private:
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t) m_commandBuffers.size();
 
-        if (vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to allocate command buffers!")
-        }
+        VK_CHECK(vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()), "failed to allocate command buffers!")
 
         for (size_t i = 0; i < m_commandBuffers.size(); i++) {
             VkCommandBufferBeginInfo beginInfo{};
@@ -625,9 +602,7 @@ private:
             beginInfo.flags = 0; // Optional
             beginInfo.pInheritanceInfo = nullptr; // Optional
 
-            if (vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-                THROW_LOGGED_ERROR("failed to begin recording command buffer!")
-            }
+            VK_CHECK(vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo), "failed to begin recording command buffer!")
             VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
             const VkRenderingAttachmentInfo colorAttachmentInfo {
@@ -710,9 +685,7 @@ private:
                     &renderingToPresentBarrier // pImageMemoryBarriers
             );
 
-            if (vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS) {
-                THROW_LOGGED_ERROR("failed to record command buffer!")
-            }
+            VK_CHECK(vkEndCommandBuffer(m_commandBuffers[i]), "failed to record command buffer!")
         }
     }
 
@@ -730,11 +703,9 @@ private:
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS  ||
-                vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
-                THROW_LOGGED_ERROR("failed to create sync objects!")
-            }
+            VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]), "failed to create ImageAvailableSemaphore!")
+            VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]), "failed to create RenderFinishedSemaphore!")
+            VK_CHECK(vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]), "failed to create InFlightFence!")
         }
     }
 
@@ -866,9 +837,7 @@ private:
         createInfo.codeSize = code.size() * 4;
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
         VkShaderModule shaderModule;
-        if (vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            THROW_LOGGED_ERROR("failed to create shader module!")
-        }
+        VK_CHECK(vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule), "failed to create shader module!")
         return shaderModule;
     }
 

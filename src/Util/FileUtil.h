@@ -11,7 +11,7 @@ static std::string readFile(std::string_view path) {
 
     if (!file.is_open()) {
         std::string message = std::string("failed to read file with path \"") + path.data() + "\"";
-        THROW_LOGGED_ERROR(message)
+        LOGGED_EXIT(message)
     }
     size_t fileSize = (size_t) file.tellg();
     std::vector<char> buffer(fileSize);
@@ -28,7 +28,7 @@ static std::vector<uint32_t> readFileBinary(std::string_view path) {
 
     if (!file.is_open()) {
         std::string message = std::string("failed to read file with path \"") + path.data() + "\"";
-        THROW_LOGGED_ERROR(message)
+        LOGGED_EXIT(message)
     }
     size_t fileSize = (size_t) file.tellg();
     std::vector<uint32_t> buffer((fileSize + 1) * sizeof(char) / sizeof(uint32_t));
@@ -45,7 +45,7 @@ static void writeFile(std::string_view path, const std::vector<uint32_t>& data) 
 
     if (!file.is_open()) {
         std::string message = std::string("failed to write file with path \"") + path.data() + "\"";
-        THROW_LOGGED_ERROR(message)
+        LOGGED_EXIT(message)
     }
 
     file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(uint32_t));

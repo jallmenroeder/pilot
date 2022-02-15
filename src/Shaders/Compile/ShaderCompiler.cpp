@@ -73,8 +73,11 @@ static shaderc_shader_kind getShaderKind(ShaderType type) {
         case VERTEX: return shaderc_glsl_vertex_shader;
         case FRAGMENT: return shaderc_glsl_fragment_shader;
         case COMPUTE: return shaderc_glsl_compute_shader;
-        default:
-        THROW_LOGGED_ERROR("Unknown shader type, ABORTING!")
+        default: {
+            LOGGED_EXIT("Unknown shader type, ABORTING!")
+            // dummy value to avoid compiler warning
+            return shaderc_vertex_shader;
+        }
     }
 }
 
