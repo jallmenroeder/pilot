@@ -1,4 +1,4 @@
-#include <vulkan/vulkan.h>
+//#include <vulkan/vulkan.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -26,7 +26,7 @@ const std::vector<const char*> validationLayers = {
 
 const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        "VK_KHR_dynamic_rendering"
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 };
 
 #ifdef NDEBUG
@@ -254,7 +254,7 @@ private:
         appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_2;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             THROW_LOGGED_ERROR("validation layers requested, but not available!")
@@ -630,28 +630,85 @@ private:
             }
             VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
-            const VkRenderingAttachmentInfoKHR colorAttachmentInfo {
-                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+            const VkRenderingAttachmentInfo colorAttachmentInfo {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                     .imageView = m_swapChainImageViews[i],
-                    .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+                    .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                     .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                     .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                     .clearValue = clearColor,
             };
 
-            const VkRenderingInfoKHR render_info {
-                    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+            const VkRenderingInfo renderingInfo {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
                     .renderArea = m_swapchainRenderArea,
                     .layerCount = 1,
                     .colorAttachmentCount = 1,
                     .pColorAttachments = &colorAttachmentInfo,
             };
 
-            vkCmdBeginRenderingKHR(m_commandBuffers[i], &render_info);
+            const VkImageMemoryBarrier presentToRenderingBarrier {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .image = m_swapChainImages[i],
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1,
+                    }
+            };
+
+            vkCmdPipelineBarrier(
+                    m_commandBuffers[i],
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
+                    0,
+                    0,
+                    nullptr,
+                    0,
+                    nullptr,
+                    1, // imageMemoryBarrierCount
+                    &presentToRenderingBarrier // pImageMemoryBarriers
+            );
+
+            vkCmdBeginRendering(m_commandBuffers[i], &renderingInfo);
 
             vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
             vkCmdDraw(m_commandBuffers[i], 3, 1, 0, 0);
-            vkCmdEndRenderingKHR(m_commandBuffers[i]);
+
+            vkCmdEndRendering(m_commandBuffers[i]);
+
+            const VkImageMemoryBarrier renderingToPresentBarrier {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                    .image = m_swapChainImages[i],
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1,
+                    }
+            };
+
+            vkCmdPipelineBarrier(
+                    m_commandBuffers[i],
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
+                    0,
+                    0,
+                    nullptr,
+                    0,
+                    nullptr,
+                    1, // imageMemoryBarrierCount
+                    &renderingToPresentBarrier // pImageMemoryBarriers
+            );
 
             if (vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS) {
                 THROW_LOGGED_ERROR("failed to record command buffer!")
