@@ -47,4 +47,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC "external/glm")
 target_include_directories(${PROJECT_NAME} PUBLIC "external/tinygltf")
 target_include_directories(${PROJECT_NAME} PUBLIC "src")
 
-target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan shaderc)
+target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan shaderc_combined)
