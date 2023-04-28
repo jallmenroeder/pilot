@@ -23,7 +23,7 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const char* APPLICATION_NAME = "PilotEngine";
-const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+const uint32_t MAX_FRAMES_IN_FLIGHT = 3;
 
 const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
@@ -35,7 +35,7 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 struct Vertex {
-    glm::vec2 pos;
+    glm::vec3 pos;
     glm::vec3 color;
 
     static VkVertexInputBindingDescription getBindingDescription() {
@@ -51,7 +51,7 @@ struct Vertex {
         std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(Vertex, pos);
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
@@ -61,15 +61,25 @@ struct Vertex {
     }
 };
 
+// unit cube
 const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{-0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 };
 
 const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0
+        0, 1, 2, 2, 3, 0,
+        0, 1, 5, 5, 4, 0,
+        1, 2, 6, 6, 5, 1,
+        2, 3, 7, 7, 6, 2,
+        3, 0, 4, 4, 7, 3,
+        4, 5, 6, 6, 7, 4
 };
 
 struct UniformBufferObject {
