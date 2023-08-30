@@ -42,7 +42,7 @@ public:
             result->source_name_length = sourceName.size();
             return result;
         }
-        content = readFile(sourceName);
+        content = FileUtil::readFile(sourceName);
         result->content = content.c_str();
         result->content_length = content.size();
         result->source_name = sourceName.c_str();
@@ -87,7 +87,7 @@ std::vector<uint32_t> ShaderCompiler::spirvFromGlsl(std::string_view path, Shade
 
     // load glsl shader code
     std::string fullPath = std::string(PROJECT_SOURCE_DIR) + SHADER_SRC + path.data() + suffix;
-    std::string shaderCode = readFile(fullPath);
+    std::string shaderCode = FileUtil::readFile(fullPath);
 
     auto includer = std::make_unique<ShaderIncluder>();
 
@@ -113,11 +113,11 @@ ShaderCompiler::loadCached(std::string_view name, ShaderType type, bool forceRel
     std::string cachePath = std::string(PROJECT_SOURCE_DIR) + SHADER_CACHE + name.data() + getShaderSuffix(type) + ".spv";
     std::vector<uint32_t> spirvCode;
 
-    if (forceReload || !fileExists(cachePath)) {
+    if (forceReload || !FileUtil::fileExists(cachePath)) {
         spirvCode = ShaderCompiler::spirvFromGlsl(name, type, optimize);
-        writeFile(cachePath, spirvCode);
+        FileUtil::writeFile(cachePath, spirvCode);
     } else {
-        spirvCode = readFileBinary(cachePath);
+        spirvCode = FileUtil::readFileBinary(cachePath);
     }
     return spirvCode;
 }
