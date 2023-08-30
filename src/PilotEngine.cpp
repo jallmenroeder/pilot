@@ -62,7 +62,7 @@ struct Vertex {
 };
 
 // unit cube
-const std::vector<Vertex> vertices = {
+const std::vector<Vertex> VERTICES = {
         {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
         {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
         {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
@@ -73,7 +73,7 @@ const std::vector<Vertex> vertices = {
         {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 };
 
-const std::vector<uint16_t> indices = {
+const std::vector<uint16_t> INDICES = {
         0, 1, 2, 2, 3, 0,
         0, 1, 5, 5, 4, 0,
         1, 2, 6, 6, 5, 1,
@@ -89,10 +89,12 @@ struct UniformBufferObject {
 };
 
 #ifdef RELEASE
-constexpr bool enableValidationLayers = false;
+constexpr bool ENABLE_VALIDATION_LAYERS = false;
 #else
-constexpr bool enableValidationLayers = true;
+constexpr bool ENABLE_VALIDATION_LAYERS = true;
 #endif
+
+
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -120,7 +122,7 @@ struct QueueFamilyIndices {
 };
 
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
+    VkSurfaceCapabilitiesKHR capabilities = {};
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
@@ -153,8 +155,8 @@ private:
         createDescriptorSetLayout();
         createGraphicsPipeline();
         createCommandPool();
-        createAndUploadBuffer(vertices, m_vertexBuffer, m_vertexBufferMemory, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        createAndUploadBuffer(indices, m_indexBuffer, m_indexBufferMemory, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        createAndUploadBuffer(VERTICES, m_vertexBuffer, m_vertexBufferMemory, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        createAndUploadBuffer(INDICES, m_indexBuffer, m_indexBufferMemory, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
@@ -196,7 +198,7 @@ private:
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
         vkDestroyDevice(m_device, nullptr);
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
 
@@ -337,7 +339,7 @@ private:
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_3;
 
-        if (enableValidationLayers && !checkValidationLayerSupport()) {
+        if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport()) {
             LOGGED_EXIT("validation layers requested, but not available!")
         }
 
@@ -348,7 +350,7 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -363,7 +365,7 @@ private:
     }
 
     void setupDebugMessenger() {
-        if (!enableValidationLayers) return;
+        if (!ENABLE_VALIDATION_LAYERS) return;
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
@@ -381,10 +383,10 @@ private:
             LOGGED_EXIT("failed to find GPUs with Vulkan support!")
         }
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        std::multimap<int, VkPhysicalDevice> candidates;
+        std::multimap<size_t, VkPhysicalDevice> candidates;
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
         for (const auto& device : devices) {
-            int score = rateDeviceSuitability(device);
+            size_t score = rateDeviceSuitability(device);
             candidates.insert(std::make_pair(score, device));
         }
 
@@ -427,7 +429,7 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
         } else {
@@ -533,7 +535,7 @@ private:
         layoutInfo.bindingCount = 1;
         layoutInfo.pBindings = &uboLayoutBinding;
 
-        VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout), "failed to create descriptor set layout!");
+        VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout), "failed to create descriptor set layout!")
     }
 
     void createGraphicsPipeline() {
@@ -867,7 +869,7 @@ private:
             vkCmdBindIndexBuffer(m_commandBuffers[i], m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
             vkCmdBindDescriptorSets(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[i], 0, nullptr);
 
-            vkCmdDrawIndexed(m_commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(m_commandBuffers[i], static_cast<uint32_t>(INDICES.size()), 1, 0, 0, 0);
 
             vkCmdEndRendering(m_commandBuffers[i]);
 
@@ -923,13 +925,13 @@ private:
         }
     }
 
-    int rateDeviceSuitability(VkPhysicalDevice device) {
+    size_t rateDeviceSuitability(VkPhysicalDevice device) {
         VkPhysicalDeviceProperties deviceProperties;
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        int score = 0;
+        size_t score = 0;
 
         // Discrete GPUs have a significant performance advantage
         if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -985,7 +987,7 @@ private:
 
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
@@ -1215,20 +1217,20 @@ private:
     VkQueue m_presentQueue = VK_NULL_HANDLE;
     VkSwapchainKHR m_swapChain = VK_NULL_HANDLE;
     std::vector<VkImage> m_swapChainImages;
-    VkFormat m_swapChainImageFormat;
-    VkRect2D m_swapchainRenderArea;
+    VkFormat m_swapChainImageFormat = {};
+    VkRect2D m_swapchainRenderArea = {};
     std::vector<VkImageView> m_swapChainImageViews;
-    VkDescriptorSetLayout m_descriptorSetLayout;
-    VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_graphicsPipeline;
-    VkCommandPool m_commandPool;
-    VkBuffer m_vertexBuffer;
-    VkDeviceMemory m_vertexBufferMemory;
-    VkBuffer m_indexBuffer;
-    VkDeviceMemory m_indexBufferMemory;
+    VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+    VkPipeline m_graphicsPipeline = VK_NULL_HANDLE;
+    VkCommandPool m_commandPool = VK_NULL_HANDLE;
+    VkBuffer m_vertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory m_vertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer m_indexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory m_indexBufferMemory = VK_NULL_HANDLE;
     std::vector<VkBuffer> m_uniformBuffers;
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;
-    VkDescriptorPool m_descriptorPool;
+    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> m_descriptorSets;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
